@@ -3,14 +3,13 @@
 <html>
 
 <head>
-  <title>Example 06.01 - Advanced 3D geometries - Convex Hull</title>
+  <title>Example 06.02 - Advanced 3D geometries - Lathe</title>
+  <!-- <script type="text/javascript" src="three.js"></script> -->
   <script type="text/javascript" src="three.js"></script>
   <script type="text/javascript" src="jquery-1.9.0.js"></script>
-  <script type="text/javascript" src="TrackballControls.js"></script>
   <script type="text/javascript" src="stats.js"></script>
   <script type="text/javascript" src="dat.gui.js"></script>
-  <script type="text/javascript" src="ConvexGeometry.js"></script>
-
+  <script type="text/javascript" src="TrackballControls.js"></script>
   <style>
     body {
       /* set margin to 0 and overflow to hidden, to go fullscreen */
@@ -39,24 +38,120 @@
       var scene = new THREE.Scene();
 
       // create a camera, which defines where we're looking at.
-      var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      var camera1 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      var camera2 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+      var camera2Obj = camera_obj();
+      var camera3 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 
       // create a render and set the size
-
       var webGLRenderer = new THREE.WebGLRenderer();
-      webGLRenderer.setClearColorHex(0xEEEEEE, 1.0);
+      webGLRenderer.setClearColor(0xEEEEEE, 1.0);
       webGLRenderer.setSize(window.innerWidth, window.innerHeight);
       webGLRenderer.shadowMapEnabled = true;
-        $("#WebGL-output").append(webGLRenderer.domElement);
-	    var trackballControls = new THREE.TrackballControls(camera, webGLRenderer.domElement);
+
       // position and point the camera to the center of the scene
-      camera.position.x = -40;
-      camera.position.y = 40;
-      camera.position.z = 60;
-      camera.lookAt(new THREE.Vector3(10, 0, 0));
+      camera1.position.x = -30;
+      camera1.position.y = 40;
+      camera1.position.z = 50;
+      camera1.lookAt(new THREE.Vector3(10, 0, 0));
+
+      camera2.position.x = 15;
+      camera2.position.y = 8;
+      camera2.position.z = 19;
+      //Kameros modelis
+
+      camera2Obj.position.z = 1;
+      camera2Obj.position.y = -0.2;
+      // camera2Obj.add(camera2Obj);
+      helper = new THREE.CameraHelper(camera2);
+      helper.name = "Helper";
+      scene.add(helper);
+      scene.add(camera2);
+      scene.add(camera2Obj);
+      camera2.lookAt(4, 8, 19);
+
+      var ambiColor = "#f4eeed";
+      var ambientLight = new THREE.AmbientLight(ambiColor, 0.3);
+      scene.add(ambientLight);
+
+      var spotLight = new THREE.SpotLight(0xffffff);
+      spotLight.position.set(30, 40, 30);
+      spotLight.castShadow = true;
+      //spotLight.shadowCameraFov = VIEW_ANGLE;
+      //spotLight.shadowBias = 0.0001;
+      //spotLight.shadowDarkness = 0.1;
+      spotLight.shadowMapWidth = 2048;
+      spotLight.shadowMapHeight = 2048;
+      scene.add(spotLight);
 
       // add the output of the renderer to the html element
       $("#WebGL-output").append(webGLRenderer.domElement);
+
+      var controls = new function() {
+        this.fov = 35;
+        this.C2 = false;
+        this.C3 = false;
+        this.wire_C2 = true;
+        this.wire_C3 = true;
+        this.dolly_zoom = 10;
+      }
+
+      var gui = new dat.GUI();
+      gui.add(controls, 'fov', 0, 180);
+      gui.add(controls, 'C2');
+      gui.add(controls, 'wire_C2');
+      gui.add(controls, 'C3');
+      gui.add(controls, 'wire_C3');
+      gui.add(controls, 'dolly_zoom', 10, 100);
+
+
+
+      camControl = new THREE.TrackballControls(camera1, webGLRenderer.domElement);
+
+
+      function camera_obj() {
+        var camiera = new THREE.Group();
+
+        var geometry = new THREE.BoxGeometry(2, 1, 0.5);
+        var material = new THREE.MeshBasicMaterial({
+          color: 0x00ff00
+        });
+        var cube = new THREE.Mesh(geometry, material);
+        //scene.add( cube );
+        camiera.add(cube);
+
+        var geometry = new THREE.CylinderGeometry(0.45, 0.45, 0.45, 32);
+        var material = new THREE.MeshBasicMaterial({
+          color: 0xffff00
+        });
+        var cylinder = new THREE.Mesh(geometry, material);
+        cylinder.position.x = 0.45;
+        cylinder.position.y = 0.6;
+        cylinder.rotation.x = 1.5708;
+        //scene.add( cylinder );
+        camiera.add(cylinder);
+
+        var cylinder1 = new THREE.Mesh(geometry, material);
+        cylinder1.position.x = -0.45;
+        cylinder1.position.y = 0.6;
+        cylinder1.rotation.x = 1.5708;
+        //scene.add( cylinder1 );
+        camiera.add(cylinder1);
+
+        var geometry1 = new THREE.CylinderGeometry(0.2, 0.3, 0.5, 32);
+        var material1 = new THREE.MeshBasicMaterial({
+          color: 0xff0000
+        });
+        var cylinder2 = new THREE.Mesh(geometry1, material1);
+        cylinder2.position.x = 1;
+        cylinder2.position.y = 0.35;
+        cylinder2.rotation.z = 1.5708;
+        //scene.add( cylinder2 );
+        camiera.add(cylinder2);
+        camiera.rotation.y = 1.5708;
+        scene.add(camiera);
+        return camiera;
+      }
 
       // call the render function
       var step = 0;
@@ -64,123 +159,198 @@
       // the points group
       var spGroup;
       // the mesh
-      var hullMesh;
+      var latheMesh;
 
-      generatePoints();
 
-      // setup the control gui
-      var controls = new function() {
-        // we need the first child, since it's a multimaterial
 
-        this.redraw = function() {
-          scene.remove(spGroup);
-          scene.remove(hullMesh);
-          scene.remove(bullMesh);
-          generatePoints();
+      const boardGeometry = new THREE.BoxBufferGeometry(60, 5, 60);
+      //   const boardMaterial = new THREE.MeshBasicMaterial({
+      //   color: 0xff0000
+      // });
+      var loader = new THREE.TextureLoader();
+      var mats = [
+        "https://i.imgur.com/d5fWaoa.png", //those are strings with urls, for example: "https://threejs.org/examples/textures"/uv_grid_opengl.jpg
+        "https://i.imgur.com/d5fWaoa.png", //this is the top
+        "https://i.imgur.com/1vRvlPv.png",
+        "https://i.imgur.com/67ERJek.jpeg",
+        "https://i.imgur.com/d5fWaoa.png",
+        "https://i.imgur.com/d5fWaoa.png"
+      ].map(pic => {
+        return new THREE.MeshLambertMaterial({
+          map: loader.load(pic)
+        });
+      });
+      const board = new THREE.Mesh(boardGeometry, mats);
+      board.receiveShadow = true;
+      scene.add(board);
 
-        };
 
+      var blackKing = addKing(4, 8, 19, "#373a40");
+      var whiteKing = addKing(-11, 8, 19, "#ffffff");
+      scene.add(blackKing);
+      scene.add(whiteKing);
+
+      camera3.position.x = -11;
+      camera3.position.y = 30;
+      camera3.position.z = 0;
+      helper3 = new THREE.CameraHelper(camera3);
+      helper3.name = "Helper";
+      scene.add(helper3);
+      camera3.lookAt(new THREE.Vector3(whiteKing.position));
+      scene.add(camera3);
+
+      //////////////
+      var cam_scale2 = 4;
+      camera2Group = new THREE.Object3D();
+      camera2Box = new THREE.Mesh(new THREE.CubeGeometry(1 * cam_scale2, 2 * cam_scale2, 4 * cam_scale2), new THREE.MeshLambertMaterial({
+        color: 0x666666
+      }));
+      camera2Group.add(camera2Box);
+      camera2Box.position.set(0 * cam_scale2, 0.5 * cam_scale2, -2.5 * cam_scale2);
+      //scene.add(camera2Box);
+
+      camera2Cylinder1 = new THREE.Mesh(new THREE.CylinderGeometry(1 * cam_scale2, 1 * cam_scale2, 1 * cam_scale2), new THREE.MeshLambertMaterial({
+        color: 0x666666
+      }));
+      camera2Group.add(camera2Cylinder1);
+      camera2Cylinder1.rotation.z = Math.PI / 2;
+      camera2Cylinder1.position.set(0 * cam_scale2, 1.5 * cam_scale2, -1.5 * cam_scale2);
+      //scene.add(camera2Cylinder1);
+
+      camera2Cylinder2 = new THREE.Mesh(new THREE.CylinderGeometry(1 * cam_scale2, 1 * cam_scale2, 1 * cam_scale2), new THREE.MeshLambertMaterial({
+        color: 0x666666
+      }));
+      camera2Group.add(camera2Cylinder2);
+      camera2Cylinder2.rotation.z = Math.PI / 2;
+      camera2Cylinder2.position.set(0 * cam_scale2, 1.5 * cam_scale2, -3.5 * cam_scale2);
+      //scene.add(camera2Cylinder2);
+
+      camera2Cylinder3 = new THREE.Mesh(new THREE.CylinderGeometry(0.6 * cam_scale2, 0.5 * cam_scale2, 1 * cam_scale2), new THREE.MeshLambertMaterial({
+        color: 0x777777
+      }));
+      camera2Group.add(camera2Cylinder3);
+      camera2Cylinder3.rotation.x = Math.PI / 2;
+      camera2Cylinder3.position.set(0, 0, 0);
+      //scene.add(camera2Cylinder3);
+
+      var axesCamera = new THREE.AxisHelper(2);
+      camera2Group.add(axesCamera);
+      //scene.add(axes);
+
+      camera2Group.position.set(-11, 30, 0);
+      camera2Group.scale.x = 0.3;
+      camera2Group.scale.y = 0.3;
+      camera2Group.scale.z = 0.3;
+      camera2Group.lookAt(whiteKing.position);
+      camera2Group.rotation.z = Math.PI / 9;
+      scene.add(camera2Group);
+
+      ///////////
+
+      function addKing(posX, posY, posZ, col) {
+        var pointsX = [
+          250, 261, 266, 265, 260, 278, 284, 278, 260, 264, 264, 260, 300, 289, 270, 280, 283, 280, 293, 291, 275, 278, 282, 290, 305, 325, 325, 333, 338, 340, 340, 333, 338, 340, 250
+        ];
+        var pointsY = [
+          1, 6, 14, 23, 30, 28, 42, 56, 55, 61, 68, 75, 90, 118, 150, 154, 161, 170, 175, 189, 195, 217, 246, 276, 305, 305, 330, 328, 333, 345, 365, 328, 333, 400, 400
+        ];
+
+        var points = [];
+        for (var i = 0; i < 34; i++) {
+          points.push(new THREE.Vector2(25 - pointsX[i] / 10, (pointsY[30] - pointsY[i] - 174) / 10));
+        }
+
+        var geometry = new THREE.LatheGeometry(points, 40);
+        var material = new THREE.MeshLambertMaterial({
+          color: col
+        });
+        var lathe = new THREE.Mesh(geometry, material);
+        material.side = THREE.DoubleSide;
+        lathe.position.x = posX;
+        lathe.position.y = posY;
+        lathe.position.z = posZ;
+        lathe.scale.x = 0.3;
+        lathe.scale.z = 0.3;
+        lathe.scale.y = 0.3;
+        lathe.castShadow = true;
+        return lathe;
+        //scene.add( lathe );
       }
 
-      var gui = new dat.GUI();
-      gui.add(controls, 'redraw');
+      //generatePoints(12);
+
+      // setup the control gui
+      /*var controls = new function () {
+          // we need the first child, since it's a multimaterial
+
+          this.segments = 12;
+          this.phiStart = 0;
+          this.phiLength = 2 * Math.PI;
+
+          this.redraw = function () {
+              scene.remove(spGroup);
+              scene.remove(latheMesh);
+              generatePoints(controls.segments);
+          };
+      }*/
+
+      /*var gui = new dat.GUI();
+      gui.add(controls, 'segments', 0, 50).step(1).onChange(controls.redraw);*/
 
 
       render();
 
-      function generatePoints() {
+      function generatePoints(segments) {
+        var pointsX = //[ 250, 262, 268, 269, 265, 276, 285, 291, 295, 305, 314, 312, 294, 282, 279, 288, 302, 303, 290, 303, 302, 288, 287, 306, 324, 320, 333, 338, 336, 330, 330, 250];
+          [250, 261, 266, 265, 260, 278, 284, 278, 260, 264, 264, 260, 300, 289, 270, 280, 283, 280, 293, 291, 275, 278, 282, 290, 305, 325, 325, 333, 338, 340, 340, 250];
+        //[250, 262, 268, 269, 265, 276, 285, 291, 295, 305, 314, 313, 300, 290, 286, 290, 303, 303, 290, 303, 303, 290, 294, 312, 326, 320, 333, 338, 336, 330, 330, 250];
+        //[250, 266, 277, 285, 289, 290, 288, 285, 280, 286, 291, 294, 295, 294, 291, 286, 280, 280, 284, 289, 295, 302, 310, 330, 330, 341, 346, 347, 345, 250, 250];
+        //[250, 268.10546875, 284.21875, 297.28515625, 306.25, 310.005859375, 307.65625, 297.98828125, 280, 292.5, 300, 302.5, 300, 275, 276.00000000000005, 279.00000000000002,284, 291, 300, 313.75, 315, 322.96875, 333.75, 338.90625,330, 334.0625, 336.25, 336.5625, 335, 250, 250];
+        var pointsY = //[ 1, 6, 15, 25, 35, 39, 46, 56, 70, 70, 75, 86, 93, 120, 148, 180, 184, 195, 200, 204, 215, 220, 268, 301, 325, 345, 348, 360, 371, 375, 400, 400];
+          [1, 6, 14, 23, 30, 28, 42, 56, 55, 61, 68, 75, 90, 118, 150, 154, 161, 170, 175, 189, 195, 217, 246, 276, 305, 305, 330, 328, 333, 345, 365, 365];
+        //[1, 6, 15, 25, 35, 39, 46, 56, 70, 70, 75, 84, 90, 117, 147, 180, 184, 195, 200, 204, 215, 220, 257, 291, 321, 345, 348, 360, 371, 375, 400, 400];
+        //[5, 11, 21, 34, 49, 65, 80, 93, 105, 106, 111, 117, 125, 132, 138, 143, 145, 190, 210, 230, 250, 270, 290, 305, 330, 334, 346, 361, 375, 375, 375];
+        //[30, 34.541015625, 43.828125 ,56.982421875 ,73.125 ,91.376953125 ,110.859375,130.693359375,150,157.8125,166.25,175.3125,185, 185,202.80000000000004, 220.2,237.2,253.8,270,275,290,297.8125,311.25,326.5625,340,346.25,355,366.25,380, 380, 380];
         // add 10 random spheres
         var points = [];
-        var uvs = [];
-        var c = 0;
-        var h = 40;
-        var R = 10;
-        var R1 = 20;
-        var R2 = 5;
-        var change = (R1 - R2) / h;
-        var m = ((R1 - R2) * (R1 - R2)) / (h * h);
-        //var m = (R1-R2)^2/(h^2);
-        var d = (h / 2) * (R1 + R2) / (R1 - R2);
-        for (var i = 0; i < 3000; i++) {
-
-          //  var randomX = -R1 + (Math.random() * 2*R1);
-          var randomY = (Math.random() * h) - (h / 2);
-          // var m = ((R1-R2)*(R1-R2))/ (randomY*randomY);
-          // var d = (randomY/2)*(R1+R2)/(R1-R2);
-          // var randomX = -R2 + (Math.random() * 2*R2);
-          var randomX = ((Math.random() * (R1-(randomY*2 * change)))*2 - (R1-(randomY*2 * change)));
-          // var randomX = 0;
-         //var randomX = (Math.random() * (h - randomY) / h * R1 * 2 - ((h - randomY) / h * R1));
-
-          var randomZ = (Math.random() * Math.sqrt(m * (randomY - d) * (randomY - d) - (randomX * randomX))) * 2 - Math.sqrt(m * (randomY - d) * (randomY - d) - (randomX * randomX));
-          //  var randomZ = 0;
-          if ((randomY >= (-h / 2)) && (randomY <= (h / 2)) && (randomX * randomX + randomZ * randomZ <= m * (randomY - d) * (randomY - d))) {
-            points.push(new THREE.Vector3(randomX, randomY, randomZ));
-            // var v = (((2 * randomY) / h) + 1) / 2;
-            // var phi = Math.atan2(randomX, randomZ);
-            // var u = phi / (2 * Math.PI);
-            // uvs.push(new THREE.Vector2(u, v));
-          }
-
-
+        var height = 5;
+        var count = 32;
+        for (var i = 0; i < count; i++) {
+          points.push(new THREE.Vector3(25 - pointsX[i] / 10, 0, (pointsY[30] - pointsY[i] - 174) / 10));
         }
 
         spGroup = new THREE.Object3D();
-        var material = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: false});
-        points.forEach(function (point) {
-
-            var spGeom = new THREE.SphereGeometry(0.2);
-            var spMesh = new THREE.Mesh(spGeom, material);
-            spMesh.position = point;
-            spGroup.add(spMesh);
+        var material = new THREE.MeshBasicMaterial({
+          color: 0xff0000,
+          transparent: false
         });
-      //  add the points as a group to the scene
+        points.forEach(function(point) {
+
+          var spGeom = new THREE.SphereGeometry(0.2);
+          var spMesh = new THREE.Mesh(spGeom, material);
+          spMesh.position = point;
+          spGroup.add(spMesh);
+        });
+        // add the points as a group to the scene
         scene.add(spGroup);
 
-        // use the same points to create a convexgeometry
-        var hullGeometry = new THREE.ConvexGeometry(points);
-        var texture = THREE.ImageUtils.loadTexture("https://i.imgur.com/1vRvlPv.png");
-        var mat = new THREE.MeshBasicMaterial({
-          map: texture
-        });
-        mat.side = THREE.DoubleSide;
-        //hullMesh = createMesh(hullGeometry);
-        var haha = addTexture(hullGeometry);
-        hullMesh = new THREE.Mesh(haha, mat);
-        scene.add(hullMesh);
+        // use the same points to create a latheGeometry
+        //var latheGeometry = new THREE.LatheGeometry(points, Math.ceil(segments), phiStart, phiLength);
+        var latheGeometry = new THREE.LatheGeometry(points, Math.ceil(segments), 0, 2 * Math.PI);
+        latheMesh = createMesh(latheGeometry);
 
-        // spGroup = new THREE.Object3D();
-        // var material = new THREE.MeshBasicMaterial({
-        //   color: 0xff0000,
-        //   transparent: false
-        // });
-        // points.forEach(function(point) {
-        //
-        //   var spGeom = new THREE.SphereGeometry(0.2);
-        //   var spMesh = new THREE.Mesh(spGeom, material);
-        //   spMesh.position = point;
-        //   spGroup.add(spMesh);
-        // });
-        //
-        // scene.add(spGroup);
-        //scene.add(spMesh);
-
-        // use the same points to create a convexgeometry
-        var bulllGeometry = new THREE.ConvexGeometry(points);
-        bullMesh = createMesh(hullGeometry);
-        scene.add(bullMesh);
+        scene.add(latheMesh);
       }
-
-
 
       function createMesh(geom) {
 
         // assign two materials
         var meshMaterial = new THREE.MeshBasicMaterial({
           color: 0x00ff00,
-          transparent: true,
-          opacity: 0.0
+          transparent: false,
+          opacity: 0.6
         });
+        var meshMaterial = new THREE.MeshNormalMaterial();
         meshMaterial.side = THREE.DoubleSide;
         var wireFrameMat = new THREE.MeshBasicMaterial();
         wireFrameMat.wireframe = true;
@@ -190,114 +360,120 @@
 
         return mesh;
       }
-
-      function addTexture(geo) {
-
-        //console.log(geo.faceVertexUvs)
-        var len = geo.faces.length
-        for (var i = 0; i < len; i++) {
-
-
-
-          var piCon = 0
-          //console.log(piCon)
-
-          var uwuPoints = []
-          var vertX = geo.vertices[geo.faces[i].a]
-          var vertY = geo.vertices[geo.faces[i].b]
-          var vertZ = geo.vertices[geo.faces[i].c]
-
-          var v1 = (((2 * vertX.y) / 40) + 1) / 2;
-          //var v1 = ((2 * vertX.y) /40);
-          var u1 = (Math.atan2(vertX.x, vertX.z) + (Math.PI)) / (2 * Math.PI)
-          //var u1 = (Math.atan2(vertX.x, vertX.z)) / (2 * Math.PI)
-
-          var v2 = (((2 * vertY.y) / 40) + 1) / 2;
-          //var v2 = ((2 * vertY.y) /40);
-         var u2 = (Math.atan2(vertY.x, vertY.z) + (Math.PI)) / (2 * Math.PI)
-        //  var u2 = (Math.atan2(vertY.x, vertY.z)) / (2 * Math.PI)
-
-          var v3 = (((2 * vertZ.y) / 40) + 1) / 2;
-          //  var v3 = ((2 * vertZ.y) /40);
-          var u3 = (Math.atan2(vertZ.x, vertZ.z) + (Math.PI)) / (2 * Math.PI)
-          //  var u3 = (Math.atan2(vertZ.x, vertZ.z)) / (2 * Math.PI)
-          var err = 0.8
-          var s = 0.8
-          var m = 0.8
-
-
-        // if(Math.abs(u1-u2 )>= err || Math.abs(u1-u3 )>= err || Math.abs(u3-u2 )>= err){
-        //
-
-
-              if ((u1 - u2) > err && (u1 - u3) > err) {
-               //u1 = (u2 + u3) / 2;
-               u1 = u1 - m;
-              }
-
-
-              if ((u2 - u1) > err && (u2 - u3) > err) {
-                u2 = u2 - m;
-              //u2 = (u1 + u3) / 2;
-              }
-
-
-              if ((u3 - u1) > err && (u3 - u2) > err) {
-                u3 = u3 - m;
-               //u3 = (u1 + u2) / 2;
-              }
-
-
-              if ((u2 - u1) > err && (u3 - u1) > err) {
-                u1 = u1 + s;
-              // u1 = (u2 + u3) / 2
-              }
-              if ((u1 - u2) > err && (u3 - u2) > err) {
-                u2 = u2 + s;
-            //  u2 = (u1 + u3) / 2;
-              }
-              if ((u1 - u3) > err && (u2 - u3) > err) {
-                u3 = u3 + s;
-             //u3 = (u1 + u2) / 2;
-            }
-        //
-        //
-        //     // console.log(u1, u2, u3);
-           // /}
-
-
-          console.log(u1, u2, u3);
-          uwuPoints.push(new THREE.Vector2(u1, v1))
-          uwuPoints.push(new THREE.Vector2(u2, v2))
-          uwuPoints.push(new THREE.Vector2(u3, v3))
-          geo.faceVertexUvs[0][i] = uwuPoints
-
-        }
-
-        return geo
-
-      }
-
-      function my_atan(y, x) {
-        var temp = Math.atan2(y, x); //[-180 ; 180]
-        var aTanFixed = (temp > 0 ? temp : (2.0 * Math.PI + temp)) //[0 ; 360]
-        return aTanFixed;
-      }
-
-
+      //var yPos=19;
+      var forward = true;
+      var timing = 0;
+      var removed3 = false;
+      var removed2 = false;
 
       function render() {
+        if (controls.wire_C3 == false) {
+          scene.remove(helper3);
+          removed3 = true;
+        } else {
+          if (removed3 == true) {
+            scene.add(helper3);
+            removed3 = false;
+          }
+        }
+
+        if (controls.wire_C2 == false) {
+          scene.remove(helper);
+          removed2 = true;
+        } else {
+          if (removed2 == true) {
+            scene.add(helper);
+            removed2 = false;
+          }
+        }
         stats.update();
+        camControl.update();
+        updateCamera();
 
-        // spGroup.rotation.y = step;
-        // bullMesh.rotation.y = step;
-        // hullMesh.rotation.y = step += 0.01;
-
+        //  spGroup.rotation.x = step;
+        //latheMesh.rotation.x = step += 0.01;
 
         // render using requestAnimationFrame
+        // step = new THREE.Object3D();
+        //
+        // var blackKing = addKing(4,8,19,"#373a40");
+        // var whiteKing = addKing(-11,8,yPos,"#ffffff");
+        // step.add(blackKing);
+        // step.add(whiteKing);
+        // scene.add(step);
+        // yPos-=0.1;
+        if (forward == true && whiteKing.position.z >= -26) {
+          whiteKing.position.z -= 0.1;
+          // camera3.rotation.y= Math.PI;
+          // camera2Group.rotation.y=Math.PI*2;
+          if (whiteKing.position.z <= 15 && whiteKing.position.z >= 0) {
+            //camera3.rotation.z= Math.PI + timing;
+            //camera2Group.rotation.z=Math.PI *2+ timing;
+            camera3.rotation.z += timing;
+            camera2Group.rotation.z += timing;
+            timing += 0.01;
+          } else {
+            if (whiteKing.position.z >= -11) {
+              camera3.rotation.z = timing + Math.PI;
+              camera2Group.rotation.z = timing;
+              timing += 0.01;
+            } else {
+              camera3.rotation.z = timing + Math.PI;
+              camera2Group.rotation.z = timing;
+            }
+          }
+
+        } else {
+          if (whiteKing.position.z <= 21) {
+            forward = false;
+            whiteKing.position.z += 0.1;
+            camera3.rotation.z = timing + Math.PI;
+            camera2Group.rotation.z = timing;
+            if (whiteKing.position.z >= -10) {
+              timing += 0.01;
+            }
+          } else {
+            forward = true;
+            // camera3.rotation.z=0;
+            // camera2Group.rotation.z=0;
+            timing = 0;
+
+          }
+        }
         requestAnimationFrame(render);
-        webGLRenderer.render(scene, camera);
-        trackballControls.update();
+
+
+
+        if (controls.C2) {
+          webGLRenderer.render(scene, camera2);
+        } else {
+          if (controls.C3) {
+            webGLRenderer.render(scene, camera3);
+
+
+          } else {
+            webGLRenderer.render(scene, camera1);
+          }
+        }
+        // step.remove(whiteKing);
+      }
+
+      function updateCamera() {
+        if (controls.C2) {
+          fovv = 2 * Math.atan((20) / (2 * (controls.dolly_zoom))) * (180 / Math.PI);
+          camera2.position.x = controls.dolly_zoom;
+          camera2.fov = fovv;
+          camera2.updateProjectionMatrix();
+        } else {
+        
+          camera1.fov = controls.fov;
+          camera1.updateProjectionMatrix();
+          //}
+        }
+        helper3.update();
+        camera3.lookAt(whiteKing.position);
+        camera2Group.lookAt(whiteKing.position);
+
       }
 
       function initStats() {
